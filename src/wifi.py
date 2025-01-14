@@ -69,6 +69,7 @@ def scan():
 
 
 async def ap_dns_catchall():
+    ''' Inspired from https://github.com/pimoroni/phew/blob/main/phew/dns.py '''
     global ap
     global ap_dns_socket
 
@@ -113,6 +114,10 @@ async def ap_reload_config(enabled, ssid, password=None):
         if ap:
             ap.active(False)
             ap = None
+
+            if ap_dns_socket:
+                ap_dns_socket.close()
+                ap_dns_socket = None
 
         return
 

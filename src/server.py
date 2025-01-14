@@ -19,6 +19,7 @@ async def start_response(writer, content_type="text/html; charset=utf-8", status
     await writer.awrite(f'HTTP/1.0 {status} {StatusCodes[status]}\r\n')
     await writer.awrite('Content-Type: ')
     await writer.awrite(content_type)
+
     if headers:
         for k, v in headers.items():
             await writer.awrite(k)
@@ -76,9 +77,10 @@ async def handler_home(reader, writer, method, path):
 
 
 async def handler_generate_204(reader, writer, method, path):
-    location = wifi.ap.ifconfig()[0] if wifi.ap else 'www.google.com'
+    ip = wifi.ap.ifconfig()[0] if wifi.ap else '192.168.4.1'
+    location = f'http://{ip}'
     await start_response(writer, status='307', headers={'Location': location})
-    await writer.awrite('Hello World')
+    await writer.awrite(f'<html><head><meta http-equiv="refresh" content="0; url={location}" /></head><body><a href="{location}">Redirect</a></body></html>')
 
 
 async def handler_api_config(reader, writer, method, path):
@@ -145,6 +147,7 @@ async def handler_api_temperature(reader, writer, method, path):
 
 Handlers = {
     '/': handler_home,
+    '/gen_204': handler_generate_204,
     '/generate_204': handler_generate_204,
     '/api/config': handler_api_config,
     '/api/wifi': handler_api_wifi,
