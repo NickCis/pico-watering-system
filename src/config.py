@@ -12,6 +12,7 @@ config = {
         'enabled': True,
         'ssid': 'Watering System',
         'password': '',
+        'inactivity-shutdown': 10 * 60,
     },
     'wlan': {
         'enabled': False,

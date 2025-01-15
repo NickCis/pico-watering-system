@@ -13,6 +13,7 @@ from config import config
 wlan = None
 ap = None
 ap_dns_socket = None
+ap_inactivity_timer = None
 wait_time = 2 * 60
 
 StatusNames = {
@@ -106,19 +107,53 @@ async def ap_dns_catchall():
         response += bytes(map(int, ip_address.split(".")))  # ip address parts
         sock.sendto(response, client)
 
+def ap_down():
+    global ap
+    global ap_dns_socket
+    global ap_inactivity_timer
+
+    if ap:
+        ap.active(False)
+        ap = None
+
+        if ap_dns_socket:
+            ap_dns_socket.close()
+            ap_dns_socket = None
+
+    get_inactivity_shutdown = None
+
+async def ap_inactivity_shutdown_watch():
+    global ap
+    global ap_inactivity_timer
+
+    get_inactivity_shutdown = lambda: config['ap'].get('inactivity-shutdown', 10 * 60)
+    already_running = ap_inactivity_timer != None
+    ap_inactivity_timer = get_inactivity_shutdown()
+
+    if already_running:
+        return
+
+    while ap and ap_inactivity_timer > 0:
+        await uasyncio.sleep(30)
+
+        clients = ap.status('stations')
+        if len(clients) > 0:
+            ap_inactivity_timer = get_inactivity_shutdown()
+        else:
+            ap_inactivity_timer = ap_inactivity_timer - 30
+
+    ap_inactivity_timer = None
+
+    if get_inactivity_shutdown() == 0:
+        return
+
+    ap_down()
 
 async def ap_reload_config(enabled, ssid, password=None):
     global ap
 
     if not enabled:
-        if ap:
-            ap.active(False)
-            ap = None
-
-            if ap_dns_socket:
-                ap_dns_socket.close()
-                ap_dns_socket = None
-
+        ap_down()
         return
 
     if not ap:
@@ -137,8 +172,9 @@ async def ap_reload_config(enabled, ssid, password=None):
         await uasyncio.sleep_ms(500)
 
     print('[ap] connected successfully', ssid, ap.ifconfig())
-    uasyncio.create_task(ap_dns_catchall())
 
+    uasyncio.create_task(ap_dns_catchall())
+    uasyncio.create_task(ap_inactivity_shutdown_watch())
 
 async def wlan_reload_config(enabled, ssid, password=None):
     global wlan
