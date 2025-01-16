@@ -12,3 +12,4 @@ export default {
   },
 }
 
+// Try to minify template literals: https://github.com/gatsbylabs/vite-plugin-minify-template-literals/blob/main/src/index.ts
