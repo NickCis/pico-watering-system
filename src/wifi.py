@@ -107,6 +107,7 @@ async def ap_dns_catchall():
         response += bytes(map(int, ip_address.split(".")))  # ip address parts
         sock.sendto(response, client)
 
+
 def ap_down():
     global ap
     global ap_dns_socket
@@ -122,11 +123,13 @@ def ap_down():
 
     get_inactivity_shutdown = None
 
+
 async def ap_inactivity_shutdown_watch():
     global ap
     global ap_inactivity_timer
 
-    get_inactivity_shutdown = lambda: config['ap'].get('inactivity-shutdown', 10 * 60)
+    def get_inactivity_shutdown(): return config['ap'].get(
+        'inactivity-shutdown', 10 * 60)
     already_running = ap_inactivity_timer != None
     ap_inactivity_timer = get_inactivity_shutdown()
 
@@ -148,6 +151,7 @@ async def ap_inactivity_shutdown_watch():
         return
 
     ap_down()
+
 
 async def ap_reload_config(enabled, ssid, password=None):
     global ap
@@ -175,6 +179,7 @@ async def ap_reload_config(enabled, ssid, password=None):
 
     uasyncio.create_task(ap_dns_catchall())
     uasyncio.create_task(ap_inactivity_shutdown_watch())
+
 
 async def wlan_reload_config(enabled, ssid, password=None):
     global wlan

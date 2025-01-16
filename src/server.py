@@ -21,6 +21,7 @@ async def start_response(writer, content_type="text/html; charset=utf-8", status
     await writer.awrite(content_type)
 
     if headers:
+        yield from writer.awrite("\r\n")
         for k, v in headers.items():
             await writer.awrite(k)
             await writer.awrite(": ")
@@ -29,6 +30,16 @@ async def start_response(writer, content_type="text/html; charset=utf-8", status
         await writer.awrite("\r\n")
     else:
         await writer.awrite("\r\n\r\n")
+
+
+async def send_file(writer, file_path, content_type="text/html; charset=utf-8", headers=None, chunk_size=4096):
+    await start_response(writer, status='200', content_type=content_type, headers=headers)
+    with open(file_path, 'rb') as file:
+        while True:
+            data = file.read(chunk_size)
+            if not data:
+                break
+            await writer.awrite(data)
 
 
 async def http_error(writer, status='500'):
@@ -72,8 +83,7 @@ async def handler_404(reader, writer, method, path):
 
 
 async def handler_home(reader, writer, method, path):
-    await start_response(writer, status='200')
-    await writer.awrite('Hello World')
+    await send_file(writer, '/index.html.gz', content_type="text/html; charset=utf-8", headers={'Content-Encoding': 'gzip'}),
 
 
 async def handler_generate_204(reader, writer, method, path):
