@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { defineConfig } from 'vite';
 
 // https://github.com/richardtallent/vite-plugin-singlefile
@@ -17,4 +19,18 @@ export default defineConfig({
     viteSingleFile({ removeViteModuleLoader: true }),
     createHtmlPlugin({ minify: true }),
   ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  ...(process.env.PROXY
+    ? {
+        server: {
+          proxy: {
+            '/api': process.env.PROXY,
+          },
+        },
+      }
+    : {}),
 });
